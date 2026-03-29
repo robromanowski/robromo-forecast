@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"h:/Coding/weatheridea-claude-1/index.html\")"
+    ]
+  }
+}
