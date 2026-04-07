@@ -527,29 +527,16 @@ async function loadAll() {
   if (!gfsList) {
     statusEl.textContent = 'Fetching forecast data…';
 
-    const lats   = NE_LOCATIONS.map(l => l.lat).join(',');
-    const lons   = NE_LOCATIONS.map(l => l.lon).join(',');
-    const coords = `latitude=${lats}&longitude=${lons}` +
-      `&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=America%2FNew_York`;
+    const resp = await fetch('./data/forecast.json');
+    if (!resp.ok) throw new Error(`Forecast data unavailable (${resp.status}) — try again shortly.`);
+    const data = await resp.json();
 
-    const [gfsResp, ecmwfResp] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?${coords}&models=gfs_seamless&forecast_days=14`),
-      fetch(`https://api.open-meteo.com/v1/ecmwf?${coords}&forecast_days=10`),
-    ]);
-
-    const [gfsRaw, ecmwfRaw] = await Promise.all([gfsResp.json(), ecmwfResp.json()]);
-
-    const firstGfs = Array.isArray(gfsRaw) ? gfsRaw[0] : gfsRaw;
-    if (firstGfs?.error) throw new Error(`GFS API error: ${firstGfs.reason}`);
-    const firstEcmwf = Array.isArray(ecmwfRaw) ? ecmwfRaw[0] : ecmwfRaw;
-    if (firstEcmwf?.error) throw new Error(`ECMWF API error: ${firstEcmwf.reason}`);
-
-    gfsList   = Array.isArray(gfsRaw)   ? gfsRaw   : [gfsRaw];
-    ecmwfList = Array.isArray(ecmwfRaw) ? ecmwfRaw : [ecmwfRaw];
+    gfsList   = data.gfs;
+    ecmwfList = data.ecmwf;
 
     // Save to cache
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), gfs: gfsList, ecmwf: ecmwfList }));
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: data.ts, gfs: gfsList, ecmwf: ecmwfList }));
     } catch (e) { /* storage full — skip caching */ }
   }
 
